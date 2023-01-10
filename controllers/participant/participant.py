@@ -20,15 +20,17 @@ from controller import Robot, Motion
 
 import sys
 sys.path.append('..')
-from utils.routines import Fall_detection
-from utils.motion import Current_motion_manager
 from utils.sensors import Accelerometer
+from utils.motion import Current_motion_manager
+from utils.routines import Fall_detection
 from utils.gait import Gait_manager
 # Eve's locate_opponent() is implemented in this module:
 import utils.image
 
 
 class Fatima (Robot):
+    SMALLEST_TURNING_RADIUS = 0.1
+
     def __init__(self):
         Robot.__init__(self)
         self.time_step = int(self.getBasicTimeStep())
@@ -42,7 +44,6 @@ class Fatima (Robot):
         self.current_motion.set(Motion('../motions/Stand.motion'))
 
     def run(self):
-        i = 0
         while self.step(self.time_step) != -1:
             if self.current_motion.is_over():
                 self.fall_detector.check()
@@ -53,16 +54,21 @@ class Fatima (Robot):
         """Walk towards the opponent like a homing missile."""
         x_pos_normalized = self._get_normalized_opponent_x()
         # We set the desired radius such that the robot walks towards the opponent.
-        desired_radius = 0.1 / x_pos_normalized if abs(x_pos_normalized) > 1e-3 else 1e3
-        self.gait_manager.command_to_motors(desired_radius)
+        # If the opponent is close to the middle, the robot walks straight (turning radius very high).
+        if abs(x_pos_normalized) > 1e-3:
+            desired_radius = self.SMALLEST_TURNING_RADIUS / x_pos_normalized
+        else:
+            desired_radius = 1e3
+        self.gait_manager.command_to_motors(desired_radius=desired_radius)
 
     def _get_normalized_opponent_x(self):
         """Locate the opponent in the image and return its horizontal position in the range [-1, 1]."""
         img = utils.image.get_cv_image_from_camera(self.camera)
-        _, _, horizontal = utils.image.locate_opponent(img)
-        if horizontal is None:
+        _, _, horizontal_coordinate = utils.image.locate_opponent(img)
+        if horizontal_coordinate is None:
             return 0
-        return horizontal * 2/img.shape[1] - 1
+        return horizontal_coordinate * 2/img.shape[1] - 1
+
 
 # create the Robot instance and run main loop
 wrestler = Fatima()
