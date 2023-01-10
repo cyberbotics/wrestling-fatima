@@ -115,7 +115,6 @@ DEF WRESTLER_RED Nao {
   translation -0.88 0 0.834
   name "participant"
   controller "participant"
-  synchronization FALSE
   selfCollision TRUE
 }
 DEF WRESTLER_BLUE Nao {
@@ -125,8 +124,7 @@ DEF WRESTLER_BLUE Nao {
   customColor [
     0 0.3333 1
   ]
-  controller "opponent"
-  synchronization FALSE
+  controller "<none>"
   selfCollision TRUE
 }
 WrestlingReferee {
