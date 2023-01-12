@@ -1,4 +1,4 @@
-# Copyright 1996-2022 Cyberbotics Ltd.
+# Copyright 1996-2023 Cyberbotics Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+from .accelerometer import Accelerometer
+from .finite_state_machine import FiniteStateMachine
+from .motion_library import MotionLibrary
+from .current_motion_manager import CurrentMotionManager
 
-sys.path.append('..')
-from utils.sensors import Accelerometer
-from utils.fsm import Finite_state_machine
-from utils.motion import Current_motion_manager, Motion_library
 
-class Fall_detection:
+class FallDetection:
     def __init__(self, time_step, robot):
         self.time_step = time_step
         self.robot = robot
         # the Finite State Machine (FSM) is a way of representing a robot's behavior as a sequence of states
-        self.fsm = Finite_state_machine(
-            states=['NO_FALL', 'BLOCKING_MOTION', 'SIDE_FALL', 'FRONT_FALL', 'BACK_FALL'],
+        self.fsm = FiniteStateMachine(
+            states=['NO_FALL', 'BLOCKING_MOTION',
+                    'SIDE_FALL', 'FRONT_FALL', 'BACK_FALL'],
             initial_state='NO_FALL',
             actions={
                 'NO_FALL': self.wait,
@@ -37,15 +37,16 @@ class Fall_detection:
         )
 
         # accelerometer
-        self.accelerometer = Accelerometer(robot.getDevice('accelerometer'), self.time_step)
+        self.accelerometer = Accelerometer(
+            robot.getDevice('accelerometer'), self.time_step)
 
         # Shoulder roll motors
         self.RShoulderRoll = robot.getDevice('RShoulderRoll')
         self.LShoulderRoll = robot.getDevice('LShoulderRoll')
 
         # load motion files
-        self.current_motion = Current_motion_manager()
-        self.library = Motion_library()
+        self.current_motion = CurrentMotionManager()
+        self.library = MotionLibrary()
 
     def check(self):
         if self.detect_fall():
@@ -54,7 +55,7 @@ class Fall_detection:
                 self.fsm.execute_action()
                 self.robot.step(self.time_step)
                 self.detect_fall()
-    
+
     def detect_fall(self):
         """Detect a fall and update the FSM state."""
         self.accelerometer.update_average()
@@ -84,13 +85,13 @@ class Fall_detection:
             self.current_motion.set(self.library.get('Stand'))
             self.fsm.transition_to('NO_FALL')
 
-    def front_fall(self): 
+    def front_fall(self):
         self.current_motion.set(self.library.get('GetUpFront'))
         self.fsm.transition_to('BLOCKING_MOTION')
 
     def back_fall(self):
         self.current_motion.set(self.library.get('GetUpBack'))
         self.fsm.transition_to('BLOCKING_MOTION')
-    
+
     def wait(self):
         pass
