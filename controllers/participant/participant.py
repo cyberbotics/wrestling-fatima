@@ -20,10 +20,12 @@ from controller import Robot
 import sys
 sys.path.append('..')
 # Eve's locate_opponent() is implemented in this module:
-import utils.image
-from utils.gait import Gait_manager
+from utils.image_processing import ImageProcessing as IP
 from utils.fall_detection import FallDetection
 from utils.accelerometer import Accelerometer
+from utils.gait import Gait_manager
+from utils.camera import Camera
+
 
 class Fatima (Robot):
     SMALLEST_TURNING_RADIUS = 0.1
@@ -33,15 +35,14 @@ class Fatima (Robot):
         Robot.__init__(self)
         self.time_step = int(self.getBasicTimeStep())
 
-        self.camera = self.getDevice("CameraTop")
-        self.camera.enable(self.time_step)
+        self.camera = Camera(self)
         self.gps = self.getDevice("gps")
         self.gps.enable(self.time_step)
         self.accelerometer = Accelerometer(
             self.getDevice('accelerometer'), self.time_step)
         self.fall_detector = FallDetection(self.time_step, self)
         self.gait_manager = Gait_manager(self, self.time_step)
-        self.heading_angle = 3.14/2
+        self.heading_angle = 3.14 / 2
         self.k = 0
 
     def run(self):
@@ -71,7 +72,7 @@ class Fatima (Robot):
             # if the robot is close to the edge, it switches dodging direction
             self.heading_angle = - self.heading_angle
             # we disable the safe zone check for a second to avoid the robot to get stuck in a loop
-            self.k = 1000/self.time_step
+            self.k = 1000 / self.time_step
         elif self.k > 0:
             self.k -= 1
         self.gait_manager.command_to_motors(
@@ -79,11 +80,11 @@ class Fatima (Robot):
 
     def _get_normalized_opponent_x(self):
         """Locate the opponent in the image and return its horizontal position in the range [-1, 1]."""
-        img = utils.image.get_cv_image_from_camera(self.camera)
-        _, _, horizontal_coordinate = utils.image.locate_opponent(img)
+        img = self.camera.get_image()
+        _, _, horizontal_coordinate = IP.locate_opponent(img)
         if horizontal_coordinate is None:
             return 0
-        return horizontal_coordinate * 2/img.shape[1] - 1
+        return horizontal_coordinate * 2 / img.shape[1] - 1
 
 
 # create the Robot instance and run main loop
