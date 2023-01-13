@@ -36,8 +36,8 @@ class ImageProcessing():
         """Get the centroid of a contour."""
         M = cv2.moments(contour)
         if M['m00'] != 0:
-            vertical_coordinate = int(M['m01']/M['m00'])
-            horizontal_coordinate = int(M['m10']/M['m00'])
+            vertical_coordinate = int(M['m01'] / M['m00'])
+            horizontal_coordinate = int(M['m10'] / M['m00'])
         else:
             # if the contour has an area of 0, the centroid cannot be computed this way
             # we use the mean of the contour points instead
@@ -55,14 +55,12 @@ class ImageProcessing():
         gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
         _, thresh = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY)
         # the binary image is then dilated to merge small groups of blobs together
-        closing = cv2.morphologyEx(
-            thresh, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)))
+        closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)))
         # the robot is assumed to be the largest contour
         largest_contour = cls.get_largest_contour(closing)
         if largest_contour is not None:
             # we get its centroid for an approximate opponent location
-            vertical_coordinate, horizontal_coordinate = cls.get_contour_centroid(
-                largest_contour)
+            vertical_coordinate, horizontal_coordinate = cls.get_contour_centroid(largest_contour)
             return largest_contour, vertical_coordinate, horizontal_coordinate
         else:
             # if no contour is found, we return None

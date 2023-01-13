@@ -23,7 +23,7 @@ sys.path.append('..')
 from utils.image_processing import ImageProcessing as IP
 from utils.fall_detection import FallDetection
 from utils.accelerometer import Accelerometer
-from utils.gait import Gait_manager
+from utils.gait_manager import GaitManager
 from utils.camera import Camera
 
 
@@ -41,7 +41,7 @@ class Fatima (Robot):
         self.accelerometer = Accelerometer(
             self.getDevice('accelerometer'), self.time_step)
         self.fall_detector = FallDetection(self.time_step, self)
-        self.gait_manager = Gait_manager(self, self.time_step)
+        self.gait_manager = GaitManager(self, self.time_step)
         self.heading_angle = 3.14 / 2
         self.k = 0
 
@@ -64,9 +64,8 @@ class Fatima (Robot):
         """Walk towards the opponent like a homing missile."""
         normalized_x = self._get_normalized_opponent_x()
         # We set the desired radius such that the robot walks towards the opponent.
-        # If the opponent is close to the middle, the robot walks straight (turning radius very high).
-        desired_radius = self.SMALLEST_TURNING_RADIUS / \
-            normalized_x if abs(normalized_x) > 1e-3 else 1e3
+        # If the opponent is close to the middle, the robot walks straight.
+        desired_radius = (self.SMALLEST_TURNING_RADIUS / normalized_x) if abs(normalized_x) > 1e-3 else None
         [x, y, _] = self.gps.getValues()
         if (abs(x) > self.SAFE_ZONE or abs(y) > self.SAFE_ZONE) and self.k == 0:
             # if the robot is close to the edge, it switches dodging direction
@@ -75,8 +74,7 @@ class Fatima (Robot):
             self.k = 1000 / self.time_step
         elif self.k > 0:
             self.k -= 1
-        self.gait_manager.command_to_motors(
-            desired_radius=desired_radius, heading_angle=self.heading_angle)
+        self.gait_manager.command_to_motors(desired_radius=desired_radius, heading_angle=self.heading_angle)
 
     def _get_normalized_opponent_x(self):
         """Locate the opponent in the image and return its horizontal position in the range [-1, 1]."""
