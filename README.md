@@ -11,69 +11,74 @@ Beats [Eve](https://github.com/cyberbotics/wrestling-charlie) by homing on her a
 Here is the [participant.py](./controllers/participant/participant.py) file:
 
 ``` Python
-from controller import Robot, Motion
+from controller import Robot
 import sys
 sys.path.append('..')
-from utils.routines import Fall_detection
-from utils.motion import Current_motion_manager
-from utils.sensors import Accelerometer
-from utils.gait import Gait_manager
-import utils.image # Eve's locate_opponent() is implemented in this module
-
-try:
-    import numpy as np
-    np.set_printoptions(suppress=True)
-except ImportError:
-    sys.exit("Warning: 'numpy' module not found. Please check the Python modules installation instructions " +
-             "at 'https://www.cyberbotics.com/doc/guide/using-python'.")
-try:
-    import cv2
-except ImportError:
-    sys.exit("Warning: 'cv2' module not found. Please check the Python modules installation instructions " +
-             "at 'https://www.cyberbotics.com/doc/guide/using-python'.")
+# Eve's locate_opponent() is implemented in this module:
+from utils.image_processing import ImageProcessing as IP
+from utils.fall_detection import FallDetection
+from utils.accelerometer import Accelerometer
+from utils.gait_manager import GaitManager
+from utils.camera import Camera
 
 
 class Fatima (Robot):
+    SMALLEST_TURNING_RADIUS = 0.1
+    SAFE_ZONE = 0.75
+
     def __init__(self):
         Robot.__init__(self)
         self.time_step = int(self.getBasicTimeStep())
 
-        self.camera = self.getDevice("CameraTop")
-        self.camera.enable(self.time_step)
-        self.accelerometer = Accelerometer(self.getDevice('accelerometer'), self.time_step)
-        self.fall_detector = Fall_detection(self.time_step, self)
-        self.gait_manager = Gait_manager(self, self.time_step)
-        self.current_motion = Current_motion_manager()
-        self.current_motion.set(Motion('../motions/Stand.motion'))
+        self.camera = Camera(self)
+        self.gps = self.getDevice("gps")
+        self.gps.enable(self.time_step)
+        self.accelerometer = Accelerometer(
+            self.getDevice('accelerometer'), self.time_step)
+        self.fall_detector = FallDetection(self.time_step, self)
+        self.gait_manager = GaitManager(self, self.time_step)
+        self.heading_angle = 3.14 / 2
+        self.k = 0
 
     def run(self):
-        i = 0
         while self.step(self.time_step) != -1:
-            if self.current_motion.is_over():
+            # We need to update the internal theta value of the gait manager at every step:
+            t = self.getTime()
+            self.gait_manager.update_theta()
+            if 0.3 < t < 2:
+                self.start_sequence()
+            elif t > 2:
                 self.fall_detector.check()
-                self.gait_manager.update_theta()
                 self.walk()
+
+    def start_sequence(self):
+        """At the beginning of the match, the robot walks forwards to move away from the edges."""
+        self.gait_manager.command_to_motors(heading_angle=0)
 
     def walk(self):
         """Walk towards the opponent like a homing missile."""
-        x_pos_normalized = self._get_normalized_opponent_x()
+        normalized_x = self._get_normalized_opponent_x()
         # We set the desired radius such that the robot walks towards the opponent.
-        desired_radius = 0.1 / x_pos_normalized if abs(x_pos_normalized) > 1e-3 else 1e3
-        self.gait_manager.command_to_motors(desired_radius)
+        # If the opponent is close to the middle, the robot walks straight.
+        desired_radius = (self.SMALLEST_TURNING_RADIUS / normalized_x) if abs(normalized_x) > 1e-3 else None
+        [x, y, _] = self.gps.getValues()
+        if (abs(x) > self.SAFE_ZONE or abs(y) > self.SAFE_ZONE) and self.k == 0:
+            # if the robot is close to the edge, it switches dodging direction
+            self.heading_angle = - self.heading_angle
+            # we disable the safe zone check for a second to avoid the robot to get stuck in a loop
+            self.k = 1000 / self.time_step
+        elif self.k > 0:
+            self.k -= 1
+        self.gait_manager.command_to_motors(desired_radius=desired_radius, heading_angle=self.heading_angle)
 
     def _get_normalized_opponent_x(self):
         """Locate the opponent in the image and return its horizontal position in the range [-1, 1]."""
-        img = utils.image.get_cv_image_from_camera(self.camera)
-        largest_contour, vertical, horizontal = utils.image.locate_opponent(img)
-        output = img.copy()
-        if largest_contour is not None:
-            cv2.drawContours(output, [largest_contour], 0, (255, 255, 0), 1)
-            output = cv2.circle(output, (horizontal, vertical), radius=2,
-                                color=(0, 0, 255), thickness=-1)
-        # utils.image.send_image_to_robot_window(self, output)
-        if horizontal is None:
+        img = self.camera.get_image()
+        _, _, horizontal_coordinate = IP.locate_opponent(img)
+        if horizontal_coordinate is None:
             return 0
-        return horizontal * 2/img.shape[1] - 1
+        return horizontal_coordinate * 2 / img.shape[1] - 1
+
 
 # create the Robot instance and run main loop
 wrestler = Fatima()
