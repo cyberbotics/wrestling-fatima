@@ -30,20 +30,20 @@ from utils.camera import Camera
 class Fatima (Robot):
     SMALLEST_TURNING_RADIUS = 0.1
     SAFE_ZONE = 0.75
+    TIME_BEFORE_DIRECTION_CHANGE = 200  # 8000 ms / 40 ms
 
     def __init__(self):
         Robot.__init__(self)
         self.time_step = int(self.getBasicTimeStep())
 
         self.camera = Camera(self)
-        self.gps = self.getDevice("gps")
-        self.gps.enable(self.time_step)
         self.accelerometer = Accelerometer(
             self.getDevice('accelerometer'), self.time_step)
         self.fall_detector = FallDetection(self.time_step, self)
         self.gait_manager = GaitManager(self, self.time_step)
         self.heading_angle = 3.14 / 2
-        self.k = 0
+        # Time before changing direction to stop the robot from falling off the ring
+        self.counter = 0
 
     def run(self):
         while self.step(self.time_step) != -1:
@@ -66,14 +66,11 @@ class Fatima (Robot):
         # We set the desired radius such that the robot walks towards the opponent.
         # If the opponent is close to the middle, the robot walks straight.
         desired_radius = (self.SMALLEST_TURNING_RADIUS / normalized_x) if abs(normalized_x) > 1e-3 else None
-        [x, y, _] = self.gps.getValues()
-        if (abs(x) > self.SAFE_ZONE or abs(y) > self.SAFE_ZONE) and self.k == 0:
-            # if the robot is close to the edge, it switches dodging direction
+        # TODO: position estimation so that if the robot is close to the edge, it switches dodging direction
+        if self.counter > self.TIME_BEFORE_DIRECTION_CHANGE:
             self.heading_angle = - self.heading_angle
-            # we disable the safe zone check for a second to avoid the robot to get stuck in a loop
-            self.k = 1000 / self.time_step
-        elif self.k > 0:
-            self.k -= 1
+            self.counter = 0
+        self.counter += 1
         self.gait_manager.command_to_motors(desired_radius=desired_radius, heading_angle=self.heading_angle)
 
     def _get_normalized_opponent_x(self):
