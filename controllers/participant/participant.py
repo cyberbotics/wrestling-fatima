@@ -22,7 +22,6 @@ sys.path.append('..')
 # Eve's locate_opponent() is implemented in this module:
 from utils.image_processing import ImageProcessing as IP
 from utils.fall_detection import FallDetection
-from utils.accelerometer import Accelerometer
 from utils.gait_manager import GaitManager
 from utils.camera import Camera
 
@@ -37,8 +36,6 @@ class Fatima (Robot):
         self.time_step = int(self.getBasicTimeStep())
 
         self.camera = Camera(self)
-        self.accelerometer = Accelerometer(
-            self.getDevice('accelerometer'), self.time_step)
         self.fall_detector = FallDetection(self.time_step, self)
         self.gait_manager = GaitManager(self, self.time_step)
         self.heading_angle = 3.14 / 2
