@@ -53,7 +53,7 @@ class Fatima (Robot):
         self.gait_manager.command_to_motors(heading_angle=0)
 
     def walk(self):
-        """Walk towards the opponent like a homing missile."""
+        """Dodge the opponent robot side to side."""
         normalized_x = self._get_normalized_opponent_x()
         # We set the desired radius such that the robot walks towards the opponent.
         # If the opponent is close to the middle, the robot walks straight.
