@@ -6,6 +6,22 @@
 
 Demonstrates the gait manager (inverse kinematics + simple ellipsoid path).
 
+This controller needs Numpy, OpenCV, Scipy and AHRS therefore the [Dockerfile](controllers/Dockerfile#L1-L12) needs to be updated:
+
+```Dockerfile
+FROM cyberbotics/webots.cloud:R2023a-ubuntu20.04-numpy
+
+# Additional dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip3 install --upgrade pip && \
+    pip3 install --no-cache-dir \
+    opencv-python \
+    scipy \
+    ahrs
+```
+
 Beats [Eve](https://github.com/cyberbotics/wrestling-charlie) by homing on her and pushing her down.
 
 Here is the [participant.py](./controllers/participant/participant.py) file:
