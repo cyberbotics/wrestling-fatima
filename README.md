@@ -22,7 +22,7 @@ RUN pip3 install --upgrade pip && \
     ahrs
 ```
 
-Beats [Eve](https://github.com/cyberbotics/wrestling-charlie) by homing on her and pushing her down.
+Beats [Eve](https://github.com/cyberbotics/wrestling-charlie) by having a higher coverage.
 
 Here is the [participant.py](./controllers/participant/participant.py) file:
 
