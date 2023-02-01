@@ -22,7 +22,7 @@ RUN pip3 install --upgrade pip && \
     ahrs
 ```
 
-Beats [Eve](https://github.com/cyberbotics/wrestling-charlie) by having a higher coverage.
+Beats [Eve](https://github.com/cyberbotics/wrestling-eve) by having a higher coverage.
 
 Here is the [participant.py](./controllers/participant/participant.py) file:
 
@@ -69,7 +69,7 @@ class Fatima (Robot):
         self.gait_manager.command_to_motors(heading_angle=0)
 
     def walk(self):
-        """Dodge the opponent robot side to side."""
+        """Dodge the opponent robot by taking side steps."""
         normalized_x = self._get_normalized_opponent_x()
         # We set the desired radius such that the robot walks towards the opponent.
         # If the opponent is close to the middle, the robot walks straight.
