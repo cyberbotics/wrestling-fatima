@@ -1,5 +1,5 @@
 {
   "name": "Fatima (Python)",
   "description": "Demonstrates the gait manager (inverse kinematics + simple ellipsoid path).",
-  "country": "CH"
+  "country": "demo"
 }
