@@ -1,5 +1,5 @@
-
-FROM cyberbotics/webots.cloud:R2023a-ubuntu20.04-numpy
+# FROM cyberbotics/webots.cloud:R2023a-ubuntu20.04-numpy
+FROM benjamindeleze/webots-test:R2023b-cloud
 
 # Dependencies for OpenCV
 RUN apt-get update && apt-get install -y \
@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --upgrade pip && \
     pip3 install --no-cache-dir \
+    numpy \
     opencv-python \
     scipy \
     ahrs
